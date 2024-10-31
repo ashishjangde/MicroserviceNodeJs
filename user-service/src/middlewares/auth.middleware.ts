@@ -13,7 +13,7 @@ declare module 'express' {
 // Define User interface based on your JWT payload
 interface User {
     id: string;
-    // Add other user properties that come from your JWT
+   
 }
 
 export const authMiddleware = async (

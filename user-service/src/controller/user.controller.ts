@@ -1,4 +1,4 @@
-import { asyncHandler } from "../utils/asyncHandler.js";
+import  asyncHandler  from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { userRepository } from "../repositories/user.repository.js";
@@ -61,16 +61,17 @@ export const Signup = asyncHandler(async (req, res) => {
 
 
 export const Login = asyncHandler(async (req, res) => {
-   
+  
     const result = loginSchema.safeParse(req.body);
     if (!result.success) {
         const error =  formatValidationErrors(result.error);
         throw new ApiError(400, "Validation Error", error);
     }
+
     const { email, password } = result.data;
     const user = await userRepository.getUserByEmail(email);
     if (!user) throw new ApiError(400, "User not found");
-    const isPasswordValid = comparePassword(password, user.password!);
+    const isPasswordValid = await comparePassword(password, user.password!);
     if (!isPasswordValid) throw new ApiError(400, "Invalid Password");
     if (!user.verified) throw new ApiError(400, "User not verified");
     const accessToken = await  generateAccessToken(user.id, user.email);
@@ -90,7 +91,7 @@ export const Login = asyncHandler(async (req, res) => {
    
 });
 export const Verify = asyncHandler(async (req, res) => { 
-
+    
     const result = userVerificationSchema.safeParse(req.body);
     if (!result.success) {
         const error =  formatValidationErrors(result.error);

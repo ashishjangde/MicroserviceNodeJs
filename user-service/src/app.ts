@@ -1,10 +1,8 @@
 // app.ts
 import express from "express";
 import cookieParser from "cookie-parser";
-import { errorHandler } from "./middlewares/errorHandler.js";
 import userRouter from "./routes/user.routes.js";
-// import userRouter from "./routes/user.routes.js";
-
+import { errorMiddleware } from "./middlewares/error.middleware.js";
 
 const app = express();
 
@@ -17,6 +15,6 @@ app.use(cookieParser());
 
  app.use("/user", userRouter);
 
-app.use(errorHandler);
 
+ app.use(errorMiddleware);
 export default app;

@@ -1,14 +1,13 @@
 
-import { NextFunction, Request, Response } from "express";
+import { Request, Response, NextFunction } from 'express';
 
-type ResponseType = (
-  req: Request, 
-  res: Response, 
-  next: NextFunction
-) => Promise<Response | void> | Response | void;
+type AsyncRequestHandler = (req: Request, res: Response, next: NextFunction) => Promise<Response | void>;
 
-
-export const asyncHandler = (fn: ResponseType) => 
-  (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(error => next(error));
+const asyncHandler = (requestHandler: AsyncRequestHandler) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+      Promise.resolve(requestHandler(req, res, next))
+            .catch(error =>next(error));
+    };
 };
+
+export default asyncHandler;
