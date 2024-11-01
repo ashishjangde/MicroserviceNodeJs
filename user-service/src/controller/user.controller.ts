@@ -77,7 +77,7 @@ export const Login = asyncHandler(async (req, res) => {
     const accessToken = await  generateAccessToken(user.id, user.email);
     const refreshToken = await  generateRefreshToken(user.id);
     const { password: _ , verificationCode: __, verificationCodeExpiry: ___, verificationToken: ____,  ...rest } = user;
-
+    console.log(rest , accessToken)
     res.status(200)
     .cookie("refreshToken", refreshToken, {
         httpOnly: true,

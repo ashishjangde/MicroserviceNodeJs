@@ -1,8 +1,9 @@
 import express from "express";
 import dotenv from "dotenv";
 import { startServiceMonitoring,  deregisterService} from "./services/serviceRegistry.js"; 
-import { healthCheck } from "./controllers/healthController.js"; 
+import { healthCheck } from "./controllers/health.controller.js"; 
 import { servicesConfig } from "./config/serviceConfig.js";
+import { getServices } from "./controllers/service.controller.js";
 
 dotenv.config(); 
 
@@ -14,6 +15,7 @@ app.use(express.json());
 
 
 app.get("/health", healthCheck);
+app.get("/services", getServices);
 
 
 app.listen(PORT, async () => {

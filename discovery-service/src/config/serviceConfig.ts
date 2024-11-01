@@ -24,5 +24,11 @@ export const servicesConfig: Service[] = [
       name: "post",
       host: "localhost",
       port: 5000
+  },
+  {
+    id: "api-gateway",
+    name: "gateway",
+    host: "localhost",
+    port: 8080
   }
 ] 

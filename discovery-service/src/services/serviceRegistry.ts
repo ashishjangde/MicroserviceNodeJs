@@ -19,7 +19,7 @@ const isError = (error: unknown): error is Error => {
 // Error logging variables
 const errorLogCounts = new Map<string, number>(); // Track error counts for each service
 const ERROR_LOG_LIMIT = 3; // Maximum number of times to log an error for a service
-const LOG_THROTTLE_MS = 5000; // Throttle duration in milliseconds
+const LOG_THROTTLE_MS = 1000; // Throttle duration in milliseconds
 
 const registerService = async (service: Service): Promise<void> => {
     try {
@@ -91,21 +91,19 @@ export const deregisterService = async (service: Service): Promise<void> => {
 
 export const monitorServices = async (): Promise<void> => {
     for (const service of servicesConfig) {
-        const { id } = service as Service; // Explicitly cast to Service type
+        const { id } = service as Service; 
 
         const isRunning = await isServiceRunning(service);
 
         if (isRunning && !activeServices.has(id)) {
-            // If the service is running but not registered, register it
             await registerService(service);
         } else if (!isRunning && activeServices.has(id)) {
-            // If the service is not running but registered, deregister it
             await deregisterService(service);
         }
     }
 };
 
-// Periodically check the status of services
+
 export const startServiceMonitoring = (): void => {
     setInterval(monitorServices, 15000); // Check every 15 seconds
 };

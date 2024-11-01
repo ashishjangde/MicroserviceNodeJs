@@ -4,15 +4,24 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/index.ts"
+    "dev": "node --watch --loader ts-node/esm src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "axios": "^1.7.7",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "jsonwebtoken": "^9.0.2",
+    "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0"
   }
 }

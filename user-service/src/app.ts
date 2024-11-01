@@ -14,9 +14,10 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 app.use("/health", healthCheck);
- app.use("/user", userRouter);
+app.use("/auth", userRouter);
 
 
 
  app.use(errorMiddleware);
+
 export default app;

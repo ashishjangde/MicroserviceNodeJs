@@ -10,5 +10,11 @@ userRouter.post("/login", Login);
 userRouter.post("/logout", authMiddleware, Logout);
 userRouter.post("/refresh", Refresh);
 userRouter.post("/verify", Verify);
+userRouter.get("hello" , (req, res)=>{
+    console.log("hello")
+    res.status(200).json({
+        message: "response sucessfull"
+    })
+})
 
 export default userRouter;
