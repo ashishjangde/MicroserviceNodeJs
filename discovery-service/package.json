@@ -3,15 +3,22 @@
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+ "scripts": {
+    "dev": "node --watch  --loader ts-node/esm src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "consul": "^2.0.1",
     "dotenv": "^16.4.5",
+    "ts-node": "^10.9.2",
     "express": "^4.21.1",
     "typescript": "^5.6.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0"
   }
 }

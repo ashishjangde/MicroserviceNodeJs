@@ -1,6 +1,6 @@
 import { ApiError } from "./ApiError.js";
 
-export class APIResponse {
+export class ApiResponse {
     public localDateTime: string;
     public data?: any;
     public apiError?: ApiError | null;
