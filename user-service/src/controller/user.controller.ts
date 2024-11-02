@@ -22,6 +22,7 @@ const hashPassword = async (password: string) => await bcrypt.hash(password, 10)
 const comparePassword = async (password: string, hashedPassword: string) => await bcrypt.compare(password, hashedPassword);
 
 export const Signup = asyncHandler(async (req, res) => {
+    
     const result = signupSchema.safeParse(req.body);
     if (!result.success) {
         const error =  formatValidationErrors(result.error);
@@ -31,7 +32,7 @@ export const Signup = asyncHandler(async (req, res) => {
     
     const existingUser = await userRepository.getUserByEmail(email);
     const existingUsername = await userRepository.getUserByUsername(username);
-    if(existingUser?.verified == false && existingUser.verified  == false){
+    if(existingUser?.verified == false && existingUsername?.verified  == false){
         const verificationCode = genrateVerificationCode();
         const verificationCodeExpiry = genrateVerificationCodeExpiry();
         const hashedPassword = await hashPassword(password);
@@ -56,7 +57,7 @@ export const Signup = asyncHandler(async (req, res) => {
         verificationCodeExpiry,
     });
     const { password: _ , verificationCode: __, verificationCodeExpiry: ___, verificationToken: ____,  ...rest } = user;
-    res.status(200).json(new ApiResponse(rest));
+    res.status(201).json(new ApiResponse(rest));
     }
     
 });

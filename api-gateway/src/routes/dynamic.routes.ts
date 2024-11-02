@@ -1,13 +1,11 @@
 import { Express, Request, Response, NextFunction, Router } from 'express';
-import axios, {  AxiosResponse } from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import errorHandler from '../middlewares/error.middleware.js';
 import { isApiResponse } from '../middlewares/error.middleware.js';
-
 
 interface ServiceRegistry {
     [key: string]: string;
 }
-
 
 interface ApiResponse<T = any> {
     localDateTime: string;
@@ -19,7 +17,6 @@ interface ApiResponse<T = any> {
     } | null;
 }
 
-
 const createServiceRouter = (serviceUrl: string): Router => {
     const router = Router();
 
@@ -28,17 +25,23 @@ const createServiceRouter = (serviceUrl: string): Router => {
             const headers = { ...req.headers };
             delete headers.host;
             delete headers['content-length'];
-            
-            console.log(`[Gateway] Forwarding ${req.method} request to: ${serviceUrl}${req.path}`);
-            
+
             const response: AxiosResponse = await axios({
                 method: req.method,
                 url: `${serviceUrl}${req.path}`,
                 headers: headers,
                 data: req.body,
                 params: req.query,
-                validateStatus: (status) => true
+                validateStatus: (status) => true,
+                withCredentials: true
             });
+
+            // Handle Set-Cookie headers including cookie clearing
+            if (response.headers['set-cookie']) {
+                const cookies = response.headers['set-cookie'];
+                
+                res.setHeader('Set-Cookie', cookies);
+            }
 
             if (isApiResponse(response.data)) {
                 res.status(response.status).json(response.data);
@@ -52,7 +55,6 @@ const createServiceRouter = (serviceUrl: string): Router => {
             };
 
             res.status(response.status).json(apiResponse);
-
         } catch (error) {
             next(error);
         }
@@ -61,17 +63,20 @@ const createServiceRouter = (serviceUrl: string): Router => {
     return router;
 };
 
-
-
 export const registerRoutes = async (app: Express): Promise<void> => {
     try {
+        app.use((req: Request, res: Response, next: NextFunction) => {
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
+            res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Set-Cookie');
+            next();
+        });
+
         const { data: services } = await axios.get<ServiceRegistry>("http://localhost:3000/services");
-        
+
         if (!services || typeof services !== 'object') {
             throw new Error('Invalid services data received from discovery service');
         }
 
-       
         Object.entries(services).forEach(([serviceName, serviceUrl]) => {
             if (serviceName !== "discovery" && serviceName !== "gateway") {
                 const basePath = `/api/v1/${serviceName}`;
@@ -82,7 +87,6 @@ export const registerRoutes = async (app: Express): Promise<void> => {
         });
 
         app.use(errorHandler);
-
     } catch (error) {
         console.error("[Gateway] Failed to fetch services from discovery:", error);
         throw error;
