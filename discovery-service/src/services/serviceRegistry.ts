@@ -9,6 +9,9 @@ interface Service {
     name: string;
     host: string;
     port: number;
+    meta?: {
+        routes?: Record<string, { requiresAuth: boolean; methods?: Record<string, boolean> }>;
+    };
 }
 
 // Type guard to check if an error is of type Error
@@ -23,11 +26,20 @@ const LOG_THROTTLE_MS = 1000; // Throttle duration in milliseconds
 
 const registerService = async (service: Service): Promise<void> => {
     try {
+        // Prepare the meta object
+        const meta: Record<string, string> = {};
+
+        if (service.meta?.routes) {
+            // Stringify the routes object to send it as a string
+            meta.routes = JSON.stringify(service.meta.routes);
+        }
+
         await consulClient.agent.service.register({
             id: service.id,
             name: service.name,
             address: service.host,
             port: service.port,
+            meta, // Pass the prepared meta
             check: {
                 name: `${service.name} health check`,
                 http: `http://${service.host}:${service.port}/health`,
@@ -37,7 +49,7 @@ const registerService = async (service: Service): Promise<void> => {
             },
         });
         console.log(`Service ${service.name} registered with Consul`);
-        activeServices.add(service.id); 
+        activeServices.add(service.id);
     } catch (error) {
         if (isError(error)) {
             console.error(`Failed to register service ${service.name}:`, error.message);
@@ -46,6 +58,10 @@ const registerService = async (service: Service): Promise<void> => {
         }
     }
 };
+
+
+
+
 
 
 const isServiceRunning = async (service: Service, retries: number = 3): Promise<boolean> => {
