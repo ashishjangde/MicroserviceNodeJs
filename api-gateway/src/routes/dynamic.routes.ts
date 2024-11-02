@@ -1,44 +1,90 @@
-import axios from "axios";
-import  { Express, Request, Response } from "express";
+import { Express, Request, Response, NextFunction, Router } from 'express';
+import axios, {  AxiosResponse } from 'axios';
+import errorHandler from '../middlewares/error.middleware.js';
+import { isApiResponse } from '../middlewares/error.middleware.js';
 
-// Function to fetch services and register routes with `/api/v1` prefix
-export const registerRoutes = async (app: Express) => {
-    try {
-        // Fetch the list of services from the discovery service
-        const { data: services } = await axios.get("http://localhost:3000/services");
 
-        // Iterate over services and register routes for each, excluding discovery and gateway
-        for (const [serviceName, serviceUrl] of Object.entries(services)) {
-            if (serviceName !== "discovery" && serviceName !== "gateway") {
-                // Register route with `/api/v1` prefix for each service
-                app.use(`/api/v1/${serviceName}`, createProxy(serviceUrl as string));
-                console.log(`Route registered: /api/v1/${serviceName} -> ${serviceUrl}`);
+interface ServiceRegistry {
+    [key: string]: string;
+}
+
+
+interface ApiResponse<T = any> {
+    localDateTime: string;
+    data: T | null;
+    apiError: {
+        message: string;
+        status: number;
+        subMessages: string[];
+    } | null;
+}
+
+
+const createServiceRouter = (serviceUrl: string): Router => {
+    const router = Router();
+
+    router.all('*', async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const headers = { ...req.headers };
+            delete headers.host;
+            delete headers['content-length'];
+            
+            console.log(`[Gateway] Forwarding ${req.method} request to: ${serviceUrl}${req.path}`);
+            
+            const response: AxiosResponse = await axios({
+                method: req.method,
+                url: `${serviceUrl}${req.path}`,
+                headers: headers,
+                data: req.body,
+                params: req.query,
+                validateStatus: (status) => true
+            });
+
+            if (isApiResponse(response.data)) {
+                res.status(response.status).json(response.data);
+                return;
             }
+
+            const apiResponse: ApiResponse = {
+                localDateTime: new Date().toISOString(),
+                data: response.data,
+                apiError: null
+            };
+
+            res.status(response.status).json(apiResponse);
+
+        } catch (error) {
+            next(error);
         }
-    } catch (error) {
-        console.error("Failed to fetch services from discovery:", error);
-    }
+    });
+
+    return router;
 };
 
-// Proxy middleware function
-const createProxy = (serviceUrl: string) => async (req: Request, res: Response) => {
-    try {
-        console.log(`Forwarding request to ${serviceUrl}${req.path}:`);
-        console.log(`Method: ${req.method}`);
-        console.log(`Headers: ${JSON.stringify(req.headers)}`);
-        console.log(`Body: ${JSON.stringify(req.body)}`);
 
-        const response = await axios({
-            method: req.method,
-            url: `${serviceUrl}${req.path}`,
-            headers: req.headers,
-            data: req.body,
-            params: req.query,
+
+export const registerRoutes = async (app: Express): Promise<void> => {
+    try {
+        const { data: services } = await axios.get<ServiceRegistry>("http://localhost:3000/services");
+        
+        if (!services || typeof services !== 'object') {
+            throw new Error('Invalid services data received from discovery service');
+        }
+
+       
+        Object.entries(services).forEach(([serviceName, serviceUrl]) => {
+            if (serviceName !== "discovery" && serviceName !== "gateway") {
+                const basePath = `/api/v1/${serviceName}`;
+                const serviceRouter = createServiceRouter(serviceUrl);
+                app.use(basePath, serviceRouter);
+                console.log(`[Gateway] Registered route: ${basePath} -> ${serviceUrl}`);
+            }
         });
 
-        res.status(response.status).json(response.data);
+        app.use(errorHandler);
+
     } catch (error) {
-        console.error(`Error forwarding request to ${serviceUrl}:`, error);
-        res.status(500).json({ error: "Error forwarding request" });
+        console.error("[Gateway] Failed to fetch services from discovery:", error);
+        throw error;
     }
 };
