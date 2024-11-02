@@ -3,14 +3,13 @@ import { verifyToken } from "../helper/JwtHelper.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 
-// Extend Express Request type to include user property
+
 declare module 'express' {
     interface Request {
-        user?: any; // Replace 'any' with your User interface type
+        user?: any; 
     }
 }
 
-// Define User interface based on your JWT payload
 interface User {
     id: string;
    

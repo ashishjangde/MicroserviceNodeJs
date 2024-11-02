@@ -41,8 +41,8 @@ export const Signup = asyncHandler(async (req, res) => {
         await userRepository.saveUser(existingUser);
         const { password: _ , verificationCode: __, verificationCodeExpiry: ___, verificationToken: ____,  ...rest } = existingUser;
         res.status(200).json(new ApiResponse(rest));
-    } 
-    if (existingUser) throw new ApiError(400, "User already exists");
+    } else{
+        if (existingUser) throw new ApiError(400, "User already exists");
     if (existingUsername) throw new ApiError(400, "Username already Taken");
     const verificationCode = genrateVerificationCode();
     const verificationCodeExpiry = genrateVerificationCodeExpiry();
@@ -57,6 +57,8 @@ export const Signup = asyncHandler(async (req, res) => {
     });
     const { password: _ , verificationCode: __, verificationCodeExpiry: ___, verificationToken: ____,  ...rest } = user;
     res.status(200).json(new ApiResponse(rest));
+    }
+    
 });
 
 
@@ -145,3 +147,11 @@ export const Logout = asyncHandler(async (req, res) => {
         message: `User ${userId} logged out successfully`,
     }));
 });
+
+
+export const hello = asyncHandler(async (req, res) => {
+    console.log("inside the hello")
+    res.status(200).json(new ApiResponse({
+        message: "Hello World",
+    }));
+})

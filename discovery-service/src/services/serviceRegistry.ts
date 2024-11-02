@@ -37,7 +37,7 @@ const registerService = async (service: Service): Promise<void> => {
             },
         });
         console.log(`Service ${service.name} registered with Consul`);
-        activeServices.add(service.id); // Track active service
+        activeServices.add(service.id); 
     } catch (error) {
         if (isError(error)) {
             console.error(`Failed to register service ${service.name}:`, error.message);
@@ -105,5 +105,5 @@ export const monitorServices = async (): Promise<void> => {
 
 
 export const startServiceMonitoring = (): void => {
-    setInterval(monitorServices, 15000); // Check every 15 seconds
+    setInterval(monitorServices, 15000); 
 };
