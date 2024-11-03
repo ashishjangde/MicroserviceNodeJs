@@ -4,7 +4,19 @@ import errorHandler from '../middlewares/error.middleware.js';
 import { isApiResponse } from '../middlewares/error.middleware.js';
 
 interface ServiceRegistry {
-    [key: string]: string;
+    [key: string]: {
+        url: string;
+        meta?: {
+            routes?: string;
+        };
+    };
+}
+
+interface RouteMetadata {
+    requiresAuth: boolean;
+    methods: {
+        [method: string]: boolean;
+    };
 }
 
 interface ApiResponse<T = any> {
@@ -17,10 +29,18 @@ interface ApiResponse<T = any> {
     } | null;
 }
 
-const createServiceRouter = (serviceUrl: string): Router => {
+const createServiceRouter = (serviceUrl: string, routeMeta: Record<string, RouteMetadata> = {}): Router => {
     const router = Router();
 
     router.all('*', async (req: Request, res: Response, next: NextFunction) => {
+        const routeInfo = routeMeta[req.path] || {};
+        const methodRequiresAuth = routeInfo.methods?.[req.method.toUpperCase()] || false;
+
+        if (routeInfo.requiresAuth && methodRequiresAuth) {
+            // Add authentication middleware or check
+            // e.g., if (!req.isAuthenticated()) return res.status(401).send("Unauthorized");
+        }
+
         try {
             const headers = { ...req.headers };
             delete headers.host;
@@ -32,15 +52,12 @@ const createServiceRouter = (serviceUrl: string): Router => {
                 headers: headers,
                 data: req.body,
                 params: req.query,
-                validateStatus: (status) => true,
+                validateStatus: () => true,
                 withCredentials: true
             });
 
-            // Handle Set-Cookie headers including cookie clearing
             if (response.headers['set-cookie']) {
-                const cookies = response.headers['set-cookie'];
-                
-                res.setHeader('Set-Cookie', cookies);
+                res.setHeader('Set-Cookie', response.headers['set-cookie']);
             }
 
             if (isApiResponse(response.data)) {
@@ -77,12 +94,18 @@ export const registerRoutes = async (app: Express): Promise<void> => {
             throw new Error('Invalid services data received from discovery service');
         }
 
-        Object.entries(services).forEach(([serviceName, serviceUrl]) => {
+        Object.entries(services).forEach(([serviceName, serviceInfo]) => {
             if (serviceName !== "discovery" && serviceName !== "gateway") {
                 const basePath = `/api/v1/${serviceName}`;
-                const serviceRouter = createServiceRouter(serviceUrl);
+                
+                // Parse route metadata if available
+                const routeMeta: Record<string, RouteMetadata> = serviceInfo.meta?.routes
+                    ? JSON.parse(serviceInfo.meta.routes)
+                    : {};
+
+                const serviceRouter = createServiceRouter(serviceInfo.url, routeMeta);
                 app.use(basePath, serviceRouter);
-                console.log(`[Gateway] Registered route: ${basePath} -> ${serviceUrl}`);
+                console.log(`[Gateway] Registered route: ${basePath} -> ${serviceInfo.url}`);
             }
         });
 
