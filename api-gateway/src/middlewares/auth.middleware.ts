@@ -10,7 +10,7 @@ declare module 'express' {
     }
 }
 
-interface User {
+export interface User {
     id: string;
    
 }
@@ -33,7 +33,7 @@ export const authMiddleware = async (
         const token = authorization.split(' ')[1];
         const user = await verifyToken(token) as User;
 
-        req.user = user;
+        req.headers['x-user-id'] = user.id;
 
         next();
     } catch (error) {

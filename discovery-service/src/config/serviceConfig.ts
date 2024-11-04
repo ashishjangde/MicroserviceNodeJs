@@ -29,8 +29,8 @@ export const servicesConfig: Service[] = [
       port: 4000,
       meta: {
           routes: {
-              "auth/logout": { requiresAuth: true, methods: { POST: true } },
-              "auth/login": { requiresAuth: false, methods: { POST: false } },
+              "/auth/logout": { requiresAuth: true, methods: { POST: true } },
+              "/auth/login": { requiresAuth: false, methods: { POST: false } },
               // Add a wildcard entry for all POST methods
               // "auth/*": { requiresAuth: true, methods: { POST: true } }
           }

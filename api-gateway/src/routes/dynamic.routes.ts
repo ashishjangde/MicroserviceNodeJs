@@ -2,6 +2,8 @@ import { Express, Request, Response, NextFunction, Router } from 'express';
 import axios, { AxiosResponse } from 'axios';
 import errorHandler from '../middlewares/error.middleware.js';
 import { isApiResponse } from '../middlewares/error.middleware.js';
+import app from '../app.js';
+import { authMiddleware } from '../middlewares/auth.middleware.js';
 
 interface ServiceRegistry {
     [key: string]: {
@@ -33,52 +35,61 @@ const createServiceRouter = (serviceUrl: string, routeMeta: Record<string, Route
     const router = Router();
 
     router.all('*', async (req: Request, res: Response, next: NextFunction) => {
-        const routeInfo = routeMeta[req.path] || {};
+        const normalizedPath = req.path.replace(/\/+$/, ''); // Normalize path
+        const routeInfo = routeMeta[normalizedPath] || {}; 
         const methodRequiresAuth = routeInfo.methods?.[req.method.toUpperCase()] || false;
 
         if (routeInfo.requiresAuth && methodRequiresAuth) {
-            // Add authentication middleware or check
-            // e.g., if (!req.isAuthenticated()) return res.status(401).send("Unauthorized");
+            // Apply auth middleware
+            return authMiddleware(req, res, async (err: any) => {
+                if (err) return next(err); 
+                await proxyRequestToService();
+            });
+        } else {
+            await proxyRequestToService();
         }
 
-        try {
-            const headers = { ...req.headers };
-            delete headers.host;
-            delete headers['content-length'];
+        async function proxyRequestToService() {
+            try {
+                const headers = { ...req.headers };
+                delete headers.host;
+                delete headers['content-length'];
 
-            const response: AxiosResponse = await axios({
-                method: req.method,
-                url: `${serviceUrl}${req.path}`,
-                headers: headers,
-                data: req.body,
-                params: req.query,
-                validateStatus: () => true,
-                withCredentials: true
-            });
+                const response: AxiosResponse = await axios({
+                    method: req.method,
+                    url: `${serviceUrl}${req.path}`,
+                    headers: headers,
+                    data: req.body,
+                    params: req.query,
+                    validateStatus: () => true,
+                    withCredentials: true
+                });
 
-            if (response.headers['set-cookie']) {
-                res.setHeader('Set-Cookie', response.headers['set-cookie']);
+                if (response.headers['set-cookie']) {
+                    res.setHeader('Set-Cookie', response.headers['set-cookie']);
+                }
+
+                if (isApiResponse(response.data)) {
+                    res.status(response.status).json(response.data);
+                    return;
+                }
+
+                const apiResponse: ApiResponse = {
+                    localDateTime: new Date().toISOString(),
+                    data: response.data,
+                    apiError: null
+                };
+
+                res.status(response.status).json(apiResponse);
+            } catch (error) {
+                next(error);
             }
-
-            if (isApiResponse(response.data)) {
-                res.status(response.status).json(response.data);
-                return;
-            }
-
-            const apiResponse: ApiResponse = {
-                localDateTime: new Date().toISOString(),
-                data: response.data,
-                apiError: null
-            };
-
-            res.status(response.status).json(apiResponse);
-        } catch (error) {
-            next(error);
         }
     });
 
     return router;
 };
+
 
 export const registerRoutes = async (app: Express): Promise<void> => {
     try {

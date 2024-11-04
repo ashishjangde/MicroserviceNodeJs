@@ -131,7 +131,7 @@ export const Refresh = asyncHandler(async (req, res) => {
 
 
 export const Logout = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.headers['x-user-id'];
 
     if (!userId) {
         return res.status(400).json(new ApiResponse({
