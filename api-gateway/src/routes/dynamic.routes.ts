@@ -1,8 +1,8 @@
 import { Express, Request, Response, NextFunction, Router } from 'express';
 import axios, { AxiosResponse } from 'axios';
+import { match } from 'path-to-regexp';
 import errorHandler from '../middlewares/error.middleware.js';
 import { isApiResponse } from '../middlewares/error.middleware.js';
-import app from '../app.js';
 import { authMiddleware } from '../middlewares/auth.middleware.js';
 
 interface ServiceRegistry {
@@ -35,13 +35,22 @@ const createServiceRouter = (serviceUrl: string, routeMeta: Record<string, Route
     const router = Router();
 
     router.all('*', async (req: Request, res: Response, next: NextFunction) => {
-        const normalizedPath = req.path.replace(/\/+$/, ''); // Normalize path
-        const routeInfo = routeMeta[normalizedPath] || {}; 
-        const methodRequiresAuth = routeInfo.methods?.[req.method.toUpperCase()] || false;
+        const normalizedPath = req.path;
+        let routeInfo: RouteMetadata | undefined;
 
-        if (routeInfo.requiresAuth && methodRequiresAuth) {
-            // Apply auth middleware
-            return authMiddleware(req, res, async (err: any) => {
+        for (const [routePattern, meta] of Object.entries(routeMeta)) {
+            const matcher = match(routePattern, { decode: decodeURIComponent });
+            if (matcher(normalizedPath)) {
+                routeInfo = meta;
+                break;
+            }
+        }
+
+        const methodRequiresAuth = routeInfo?.methods?.[req.method.toUpperCase()] || false;
+
+        // If route requires auth, pass to authMiddleware
+        if (routeInfo?.requiresAuth && methodRequiresAuth) {
+            authMiddleware(req, res, async (err: any) => {
                 if (err) return next(err); 
                 await proxyRequestToService();
             });
@@ -54,6 +63,8 @@ const createServiceRouter = (serviceUrl: string, routeMeta: Record<string, Route
                 const headers = { ...req.headers };
                 delete headers.host;
                 delete headers['content-length'];
+                headers['x-user-id'] = req.headers['x-user-id'];
+                console.log(headers);
 
                 const response: AxiosResponse = await axios({
                     method: req.method,
@@ -89,7 +100,6 @@ const createServiceRouter = (serviceUrl: string, routeMeta: Record<string, Route
 
     return router;
 };
-
 
 export const registerRoutes = async (app: Express): Promise<void> => {
     try {

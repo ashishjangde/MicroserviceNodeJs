@@ -3,16 +3,14 @@ import { verifyToken } from "../helper/JwtHelper.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 
-
 declare module 'express' {
     interface Request {
-        user?: any; 
+        user?: User; 
     }
 }
 
 export interface User {
     id: string;
-   
 }
 
 export const authMiddleware = async (
@@ -25,7 +23,7 @@ export const authMiddleware = async (
 
         if (!authorization || !authorization.startsWith('Bearer ')) {
             res.status(401).json(
-                new ApiResponse(null ,new ApiError(401, 'No token provided'))
+                new ApiResponse(null, new ApiError(401, 'No token provided'))
             );
             return;
         }
@@ -33,12 +31,14 @@ export const authMiddleware = async (
         const token = authorization.split(' ')[1];
         const user = await verifyToken(token) as User;
 
-        req.headers['x-user-id'] = user.id;
+        // Set user in request and x-user-id header for forwarding
+        req.user = user;
+        req.headers['x-user-id'] = user.id as string;
 
         next();
     } catch (error) {
         res.status(401).json(
-            new ApiResponse(null ,new ApiError(401, 'Unauthorized: Invalid token'))
+            new ApiResponse(null, new ApiError(401, 'Unauthorized: Invalid token'))
         );
     }
 };

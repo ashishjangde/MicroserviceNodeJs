@@ -9,7 +9,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 app.use("/health", healthCheck);
-app.use("/post", postRouter);
+app.use( postRouter);
 
 
 app.use(errorMiddleware);

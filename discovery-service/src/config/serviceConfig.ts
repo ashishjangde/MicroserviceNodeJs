@@ -15,12 +15,7 @@ export const servicesConfig: Service[] = [
       name: "discovery",
       host: "localhost",
       port: 3000,
-      meta: {
-          routes: {
-              "some/public/route": { requiresAuth: false, methods: { GET: false } },
-              "some/protected/route": { requiresAuth: true, methods: { GET: true, POST: true } }
-          }
-      }
+     
   },
   {
       id: "user-service",
@@ -30,7 +25,6 @@ export const servicesConfig: Service[] = [
       meta: {
           routes: {
               "/auth/logout": { requiresAuth: true, methods: { POST: true } },
-              "/auth/login": { requiresAuth: false, methods: { POST: false } },
               // Add a wildcard entry for all POST methods
               // "auth/*": { requiresAuth: true, methods: { POST: true } }
           }
@@ -41,6 +35,13 @@ export const servicesConfig: Service[] = [
       name: "post",
       host: "localhost",
       port: 5000,
+      meta: {
+          routes: {
+              "/": { requiresAuth: true, methods: { POST: true , GET: true} },
+              "/delete/:postId": { requiresAuth: true, methods: { DELETE: true } },
+            
+          }
+      }
   
   },
   {
