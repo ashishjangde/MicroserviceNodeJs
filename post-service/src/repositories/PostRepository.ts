@@ -23,19 +23,16 @@ export const PostRepository = {
         });
     },
 
-    getPostByUserId: async (
-        userId: string,
-        page: number = 1,
-        count: number = 10,
-    ): Promise<Post[]> => {
-        return await handleDatabaseOperation(async () => {
-            return await prisma.post.findMany({
-                where: {
-                    userId,
-                },
-                skip: (page - 1) * count,
-                take: count,
-            });
+     async getPostByUserId(userId: string, page: number = 1, count: number = 10): Promise<Post[]> {
+        return await prisma.post.findMany({
+            where: {
+                userId: userId
+            },
+            skip: (page - 1) * count,
+            take: count,
+            orderBy: {
+                createdAt: 'desc' 
+            }
         });
     },
 
@@ -48,4 +45,12 @@ export const PostRepository = {
             });
         });
     },
+
+    async getPostCount(userId: string): Promise<number> {
+        return await prisma.post.count({
+            where: {
+                userId: userId
+            }
+        });
+    }
 };

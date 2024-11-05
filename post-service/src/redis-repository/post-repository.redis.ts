@@ -38,10 +38,14 @@ const postRedisRepository = {
     setAllPostByUserId: async (userId: string, posts: Post[]): Promise<void> => {
         await handleDatabaseOperation(async () => {
             const userKey = `user:${userId}:posts`;
+            
+            // Clear existing list
             await redisClient.del(userKey);
+            
             if (posts.length > 0) {
+                // Store posts in reverse chronological order
                 const postStrings = posts.map(post => JSON.stringify(post));
-                await redisClient.lPush(userKey, postStrings);
+                await redisClient.rPush(userKey, postStrings);
                 await redisClient.expire(userKey, EXPIRATION_TIME);
             }
         });
@@ -50,10 +54,20 @@ const postRedisRepository = {
     getPostByUserId: async (userId: string, page: number = 1, count: number = 10): Promise<Post[] | null> => {
         return await handleDatabaseOperation(async () => {
             const userKey = `user:${userId}:posts`;
+            
+            // Calculate start and end indices for pagination
             const start = (page - 1) * count;
-            const end = page * count - 1;
+            const end = start + count - 1;
+            
+            // Get posts from Redis
             const posts = await redisClient.lRange(userKey, start, end);
-            return posts ? posts.map(post => JSON.parse(post) as Post) : null;
+            
+            // If no posts found or invalid range, return null to trigger DB fetch
+            if (!posts || posts.length === 0) {
+                return null;
+            }
+            
+            return posts.map(post => JSON.parse(post) as Post);
         });
     },
 
