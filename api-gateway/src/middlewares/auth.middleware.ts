@@ -31,7 +31,6 @@ export const authMiddleware = async (
         const token = authorization.split(' ')[1];
         const user = await verifyToken(token) as User;
 
-        // Set user in request and x-user-id header for forwarding
         req.user = user;
         req.headers['x-user-id'] = user.id as string;
 

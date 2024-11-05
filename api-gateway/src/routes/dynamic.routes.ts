@@ -64,7 +64,6 @@ const createServiceRouter = (serviceUrl: string, routeMeta: Record<string, Route
                 delete headers.host;
                 delete headers['content-length'];
                 headers['x-user-id'] = req.headers['x-user-id'];
-                console.log(headers);
 
                 const response: AxiosResponse = await axios({
                     method: req.method,

@@ -38,7 +38,7 @@ export const servicesConfig: Service[] = [
       meta: {
           routes: {
               "/": { requiresAuth: true, methods: { POST: true , GET: true} },
-              "/delete/:postId": { requiresAuth: true, methods: { DELETE: true } },
+              "/:postId": { requiresAuth: true, methods: { DELETE: true } },
             
           }
       }
