@@ -36,6 +36,8 @@ export const Signup = asyncHandler(async (req, res) => {
         const verificationCode = genrateVerificationCode();
         const verificationCodeExpiry = genrateVerificationCodeExpiry();
         const hashedPassword = await hashPassword(password);
+        existingUser.username = username;
+        existingUser.name = name;
         existingUser.verificationCode = verificationCode;
         existingUser.verificationCodeExpiry = verificationCodeExpiry;
         existingUser.password = hashedPassword;

@@ -12,8 +12,8 @@ export const getAllPosts = asyncHandler(async (req, res) => {
         throw new ApiError(404, "User not found");
     }
 
-    // Parse pagination parameters with validation
-    const page = Math.max(1, parseInt(req.query.page as string) || 1); // Ensure minimum page is 1
+
+    const page = Math.max(1, parseInt(req.query.page as string) || 1); 
     const count = Math.min(50, Math.max(1, parseInt(req.query.count as string) || 10)); // Limit count between 1 and 50
 
     // First try to get total count for pagination
